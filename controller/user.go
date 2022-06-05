@@ -28,13 +28,14 @@ var usersLoginInfo = map[string]models.UserRes{
 	},
 }
 var (
-	dbdsn = "douyin:665577733_douYIN@tcp(119.23.68.131:3306)/douyin"
+	dbdsn = "douyin:665577733_douYIN@tcp(119.23.68.131:3306)/douyin?parseTime=true"
 )
 
 const (
 	TOKEN_KEY           = "66557773"
 	TOKEN_PREKEY        = "DOUYIN"
 	TOKEN_PREKEY_LENGTH = 6
+	MD5_PREKEY          = "douyin"
 )
 
 type UserLoginResponse struct {
@@ -106,25 +107,53 @@ func Register(c *gin.Context) {
 
 // Login 登录接口
 func Login(c *gin.Context) {
-
 	// 获取输入信息
 	username := c.Query("username")
 	password := c.Query("password")
 
-	//
-	token := username + password
+	// TODO 查询数据库前先做基本的数据合法性检查
 
-	if user, exist := usersLoginInfo[token]; exist {
+	// 尝试登录
+	user, err := GetUserModelByPwd(username, password)
+	if err != nil {
+		// TODO 将错误信息打印至日志中
+		fmt.Println(err)
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 0},
-			UserId:   user.Id,
-			Token:    token,
+			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when logging"},
 		})
-	} else {
+		return
+	} else if user == (models.User{}) {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "User_Login doesn't exist"},
+			Response: models.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 		})
+		return
 	}
+	//_,err=GetUserByUserModel(user,user.Id)
+	//if err!=nil{
+	//	// TODO 将错误信息打印至日志中
+	//	fmt.Println(err)
+	//	c.JSON(http.StatusOK, UserLoginResponse{
+	//		Response: models.Response{StatusCode: 1, StatusMsg: "error occur when logging"},
+	//	})
+	//	return
+	//}
+	// 生成token
+	token, err := MakeToken(username, password)
+	if err != nil {
+		// TODO 将错误信息打印至日志中
+		fmt.Println(err)
+		c.JSON(http.StatusOK, UserLoginResponse{
+			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when making token"},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: models.Response{StatusCode: 0},
+		UserId:   user.Id,
+		Token:    token,
+	})
+
 }
 
 func DoRegister(username string, password string) (newUser models.User, err error) {
@@ -142,7 +171,7 @@ func DoRegister(username string, password string) (newUser models.User, err erro
 	// TODO 数据有效性验证
 
 	// &密码加密
-	encPwd := units.EncryptMd5(password)
+	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
 	// &创建用户对象，
 	newUser = models.User{
 		Name:     username,
@@ -172,11 +201,11 @@ func GetUserModelByPwd(username string, password string) (user models.User, err 
 		return models.User{}, err
 	}
 	// 密码加密
-	encPwd := units.EncryptMd5(password)
+	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
 
 	user = models.User{}
 	// 查询用户基本信息
-	res := db.Model(&models.User{}).Where("user_name = ? AND password = ?", username, encPwd).First(&user)
+	res := db.Model(&models.User{}).Where("name = ? AND password = ?", username, encPwd).Find(&user)
 	if res.Error != nil {
 		// TODO 将错误打印至日志中
 		fmt.Println(res.Error)
