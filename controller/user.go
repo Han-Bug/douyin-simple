@@ -227,7 +227,12 @@ func GetUserByUserModel(userModel models.User, curUserId int64) (user models.Use
 	db.Model(&models.Relation{}).Where("user_id = ?", user.Id).Count(&followerCount)
 	// 查询是否已关注
 	var isRelatedN int64
-	db.Model(&models.Relation{}).Where("user_id = ? AND follower_id = ?", user.Id, curUserId).Count(&isRelatedN)
+	// 如果用户未登录（curUser编号小于0）
+	if curUserId < 0 {
+		isRelatedN = -1
+	} else {
+		db.Model(&models.Relation{}).Where("user_id = ? AND follower_id = ?", user.Id, curUserId).Count(&isRelatedN)
+	}
 	isRelated := false
 	if isRelatedN > 0 {
 		isRelated = true
@@ -313,6 +318,7 @@ func MakeToken(username string, password string) (token string, err error) {
 	return des, nil
 }
 func UserInfo(c *gin.Context) {
+	// 获取当前用户编号
 	curUserId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusOK, UserResponse{
@@ -320,7 +326,9 @@ func UserInfo(c *gin.Context) {
 		})
 		return
 	}
+	// 获取token
 	token := c.Query("token")
+	// 解析token，获取用户数据库信息
 	userModel, err := GetUserModelByToken(token)
 	if err != nil {
 		c.JSON(http.StatusOK, UserResponse{
@@ -328,6 +336,7 @@ func UserInfo(c *gin.Context) {
 		})
 		return
 	}
+	// 获取用户详细信息
 	user, err := GetUserByUserModel(userModel, curUserId)
 	if err != nil {
 		c.JSON(http.StatusOK, UserResponse{
