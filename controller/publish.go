@@ -157,7 +157,7 @@ func PublishList(c *gin.Context) {
 		return
 	}
 	var videos []models.Video
-	db.Where("user_id = ?", author.Id).Order("created_at desc").Find(videos)
+	db.Where("user_id = ?", author.Id).Order("created_at desc").Find(&videos)
 	var videoReses []models.VideoRes
 	for i := 0; i < len(videos); i++ {
 		// 查询视频的点赞数、评论数
@@ -167,7 +167,7 @@ func PublishList(c *gin.Context) {
 		db.Model(&models.Comment{}).Where("video_id = ?", videos[i].Id).Count(&commentCount)
 		// 查询该用户是否赞了该视频
 		var isFavorite = false
-		if curUser.Id >= 0 {
+		if curUser.Id > 0 {
 			favorObj := models.Favorite{}
 			db.Model(&models.Favorite{}).Where("video_id = ? And user_id = ?", videos[i].Id, curUser.Id).Find(&favorObj)
 			if favorObj != (models.Favorite{}) {

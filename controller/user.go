@@ -267,6 +267,8 @@ func GetUserModelById(userId int64) (user models.User, err error) {
 }
 
 //GetUserModelByToken 根据token获取用户信息
+// 当token解析失败或无效时err不为空
+// 当err为空时必定返回解析后的用户
 func GetUserModelByToken(token string) (user models.User, err error) {
 	// 解码token
 	des, err := units.DecryptDes(token, []byte(TOKEN_KEY))
