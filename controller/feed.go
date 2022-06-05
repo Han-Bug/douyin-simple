@@ -52,15 +52,15 @@ func Feed(c *gin.Context) {
 	}
 	var videos []models.Video
 	//db.Where("created_at > ?",).Order("created_at desc").Limit(20).Find(&videos)
-	res := db.Order("created_at desc").Limit(20).Find(&videos)
-	if res.Error != nil {
-		fmt.Println(res)
-		fmt.Println(res.Error)
-		c.JSON(http.StatusOK, UserResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "bad token"},
-		})
-		return
-	}
+	db.Order("created_at desc").Limit(20).Find(&videos)
+	//if res.Error != nil {
+	//	fmt.Println(res)
+	//	fmt.Println(res.Error)
+	//	c.JSON(http.StatusOK, UserResponse{
+	//		Response: models.Response{StatusCode: 1, StatusMsg: "bad token"},
+	//	})
+	//	return
+	//}
 	var videoReses []models.VideoRes
 	for i := 0; i < len(videos); i++ {
 		// 查询视频的作者信息
