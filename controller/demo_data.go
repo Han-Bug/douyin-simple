@@ -1,8 +1,6 @@
 package controller
 
-import "douyin-simple/models"
-
-var DemoVideos = []models.Video{
+var DemoVideos = []Video{
 	{
 		Id:            1,
 		Author:        DemoUser,
@@ -14,7 +12,7 @@ var DemoVideos = []models.Video{
 	},
 }
 
-var DemoComments = []models.Comment{
+var DemoComments = []Comment{
 	{
 		Id:         1,
 		User:       DemoUser,
@@ -23,7 +21,7 @@ var DemoComments = []models.Comment{
 	},
 }
 
-var DemoUser = models.User{
+var DemoUser = User{
 	Id:            1,
 	Name:          "TestUser",
 	FollowCount:   0,
