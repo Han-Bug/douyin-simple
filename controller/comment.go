@@ -8,7 +8,7 @@ import (
 
 type CommentListResponse struct {
 	models.Response
-	CommentList []models.Comment `json:"comment_list,omitempty"`
+	CommentList []models.CommentRes `json:"comment_list,omitempty"`
 }
 
 // CommentAction no practical effect, just check if token is valid

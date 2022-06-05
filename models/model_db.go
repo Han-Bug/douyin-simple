@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type UserModel struct {
+type User struct {
 	Id        int64 `gorm:"column:user_id"`
 	Name      string
 	Password  string
@@ -13,7 +13,7 @@ type UserModel struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }
-type VideoModel struct {
+type Video struct {
 	Id        int64 `gorm:"column:video_id"`
 	UserId    string
 	Title     string
@@ -23,7 +23,7 @@ type VideoModel struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }
-type CommentModel struct {
+type Comment struct {
 	VideoId   int64
 	UserId    int64
 	Content   string
@@ -31,12 +31,12 @@ type CommentModel struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }
-type FavoriteModel struct {
+type Favorite struct {
 	UserId    int64
 	VideoId   int64
 	CreatedAt time.Time
 }
-type RelationModel struct {
+type Relation struct {
 	FollowerId int64
 	UserId     int64
 	CreatedAt  time.Time

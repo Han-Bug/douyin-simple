@@ -6,23 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"path/filepath"
-	"time"
 )
 
 type VideoListResponse struct {
 	models.Response
-	VideoList []models.Video `json:"video_list"`
+	VideoList []models.VideoRes `json:"video_list"`
 }
 
 // Publish check token then save upload file to public directory
 func Publish(c *gin.Context) {
 	token := c.PostForm("token")
 
-	// 如果token不存在
-	if _, exist := usersLoginInfo[token]; !exist {
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "User_Login doesn't exist"})
-		return
-	}
+	// 解析token
 
 	// 将视频文件存入data
 	data, err := c.FormFile("data")
@@ -55,19 +50,7 @@ func Publish(c *gin.Context) {
 	})
 }
 
-type Video struct {
-	ID         int64 `gorm:""`
-	UserId     int64
-	Author     string
-	Title      string
-	PlayUrl    string
-	CoverUrl   string
-	CreateTime time.Time `gorm:"autoCreateTime:milli"`
-	UpdateTime time.Time `gorm:"autoUpdateTime:milli"`
-	DeleteTime time.Time
-}
-
-func DoPublish(video Video) {
+func DoPublish(video models.VideoRes) {
 
 }
 

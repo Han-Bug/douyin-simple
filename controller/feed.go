@@ -9,8 +9,8 @@ import (
 
 type FeedResponse struct {
 	models.Response
-	VideoList []models.Video `json:"video_list,omitempty"`
-	NextTime  int64          `json:"next_time,omitempty"`
+	VideoList []models.VideoRes `json:"video_list,omitempty"`
+	NextTime  int64             `json:"next_time,omitempty"`
 }
 
 // Feed same demo video list for every request

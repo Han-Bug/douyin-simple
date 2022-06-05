@@ -8,7 +8,7 @@ import (
 
 type UserListResponse struct {
 	models.Response
-	UserList []models.User `json:"user_list"`
+	UserList []models.UserRes `json:"user_list"`
 }
 
 // RelationAction no practical effect, just check if token is valid
@@ -28,7 +28,7 @@ func FollowList(c *gin.Context) {
 		Response: models.Response{
 			StatusCode: 0,
 		},
-		UserList: []models.User{DemoUser},
+		UserList: []models.UserRes{DemoUser},
 	})
 }
 
@@ -38,6 +38,6 @@ func FollowerList(c *gin.Context) {
 		Response: models.Response{
 			StatusCode: 0,
 		},
-		UserList: []models.User{DemoUser},
+		UserList: []models.UserRes{DemoUser},
 	})
 }

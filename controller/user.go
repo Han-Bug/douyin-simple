@@ -18,7 +18,7 @@ import (
 // usersLoginInfo use map to store user info, and key is username+password for demo
 // user data will be cleared every time the server starts
 // test data: username=zhanglei, password=douyin
-var usersLoginInfo = map[string]models.User{
+var usersLoginInfo = map[string]models.UserRes{
 	"zhangleidouyin": {
 		Id:            1,
 		Name:          "zhanglei",
@@ -45,7 +45,7 @@ type UserLoginResponse struct {
 
 type UserResponse struct {
 	models.Response
-	User models.User `json:"user"`
+	User models.UserRes `json:"user"`
 }
 
 // Register 注册接口
@@ -71,7 +71,7 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
-	if user != (models.UserModel{}) {
+	if user != (models.User{}) {
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "User_Login already exist"},
 		})
@@ -127,7 +127,7 @@ func Login(c *gin.Context) {
 	}
 }
 
-func DoRegister(username string, password string) (newUser models.UserModel, err error) {
+func DoRegister(username string, password string) (newUser models.User, err error) {
 
 	// &数据库连接
 	db, err := gorm.Open(
@@ -136,7 +136,7 @@ func DoRegister(username string, password string) (newUser models.UserModel, err
 	// TODO 将错误信息打印至日志中
 	if err != nil {
 		fmt.Println(err)
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 
 	// TODO 数据有效性验证
@@ -144,7 +144,7 @@ func DoRegister(username string, password string) (newUser models.UserModel, err
 	// &密码加密
 	encPwd := units.EncryptMd5(password)
 	// &创建用户对象，
-	newUser = models.UserModel{
+	newUser = models.User{
 		Name:     username,
 		Password: encPwd,
 	}
@@ -153,14 +153,14 @@ func DoRegister(username string, password string) (newUser models.UserModel, err
 	if res.Error != nil {
 		// TODO 将错误信息打印至日志中
 		fmt.Println(res.Error)
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 
 	return newUser, nil
 }
 
 // GetUserModelByPwd 通过帐号密码在数据库中查找相关用户，并返回用户数据
-func GetUserModelByPwd(username string, password string) (user models.UserModel, err error) {
+func GetUserModelByPwd(username string, password string) (user models.User, err error) {
 	// 连接数据库
 	db, err := gorm.Open(
 		mysql.Open(dbdsn),
@@ -169,41 +169,41 @@ func GetUserModelByPwd(username string, password string) (user models.UserModel,
 	// TODO 将错误打印至日志中
 	if err != nil {
 		fmt.Println(err)
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 	// 密码加密
 	encPwd := units.EncryptMd5(password)
 
-	user = models.UserModel{}
+	user = models.User{}
 	// 查询用户基本信息
-	res := db.Where("user_name = ? AND password = ?", username, encPwd).First(&user)
+	res := db.Model(&models.User{}).Where("user_name = ? AND password = ?", username, encPwd).First(&user)
 	if res.Error != nil {
 		// TODO 将错误打印至日志中
 		fmt.Println(res.Error)
-		return models.UserModel{}, res.Error
+		return models.User{}, res.Error
 	}
 
 	return user, nil
 }
-func GetUserByUserModel(userModel models.UserModel, curUserId int64) (user models.User, err error) {
+func GetUserByUserModel(userModel models.User, curUserId int64) (user models.UserRes, err error) {
 	// 连接数据库
 	db, err := gorm.Open(
 		mysql.Open(dbdsn),
 	)
 	// 查询用户关注总数
 	var followCount int64
-	db.Model(&models.RelationModel{}).Where("follower_id = ?", user.Id).Count(&followCount)
+	db.Model(&models.Relation{}).Where("follower_id = ?", user.Id).Count(&followCount)
 	// 查询用户粉丝总数
 	var followerCount int64
-	db.Model(&models.RelationModel{}).Where("user_id = ?", user.Id).Count(&followerCount)
+	db.Model(&models.Relation{}).Where("user_id = ?", user.Id).Count(&followerCount)
 	// 查询是否已关注
 	var isRelatedN int64
-	db.Model(&models.RelationModel{}).Where("user_id = ? AND follower_id = ?", user.Id, curUserId).Count(&isRelatedN)
+	db.Model(&models.Relation{}).Where("user_id = ? AND follower_id = ?", user.Id, curUserId).Count(&isRelatedN)
 	isRelated := false
 	if isRelatedN > 0 {
 		isRelated = true
 	}
-	user = models.User{
+	user = models.UserRes{
 		Id:            userModel.Id,
 		Name:          userModel.Name,
 		FollowCount:   followCount,
@@ -213,7 +213,7 @@ func GetUserByUserModel(userModel models.UserModel, curUserId int64) (user model
 	return user, nil
 }
 
-func GetUserModelById(userId int64) (user models.UserModel, err error) {
+func GetUserModelById(userId int64) (user models.User, err error) {
 	// 连接数据库
 	db, err := gorm.Open(
 		mysql.Open(dbdsn),
@@ -222,10 +222,10 @@ func GetUserModelById(userId int64) (user models.UserModel, err error) {
 	if err != nil {
 		// TODO 将错误打印至日志中
 		fmt.Println(err)
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 
-	user = models.UserModel{}
+	user = models.User{}
 	// 执行查询
 	db.First(&user, userId)
 
@@ -233,13 +233,13 @@ func GetUserModelById(userId int64) (user models.UserModel, err error) {
 }
 
 //GetUserModelByToken 根据token获取用户信息
-func GetUserModelByToken(token string) (user models.UserModel, err error) {
+func GetUserModelByToken(token string) (user models.User, err error) {
 	// 解码token
 	des, err := units.DecryptDes(token, []byte(TOKEN_KEY))
 	if err != nil {
 		// TODO 将错误打印至日志
 		fmt.Println(err)
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 
 	// 校验token前缀符
@@ -247,7 +247,7 @@ func GetUserModelByToken(token string) (user models.UserModel, err error) {
 	if strings.Compare(sli, TOKEN_PREKEY) != 0 {
 		// TODO 将错误打印至日志
 		fmt.Println("无效的token:", des)
-		return models.UserModel{}, errors.New("无效的token:" + des)
+		return models.User{}, errors.New("无效的token:" + des)
 	}
 	// 解析token
 	var tokenData models.TokenData
@@ -255,13 +255,13 @@ func GetUserModelByToken(token string) (user models.UserModel, err error) {
 	if err != nil {
 		// TODO 将错误打印至日志
 		fmt.Println("token解析失败", des)
-		return models.UserModel{}, errors.New("token解析失败")
+		return models.User{}, errors.New("token解析失败")
 	}
 
 	// 获取用户信息
 	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password)
 	if err != nil {
-		return models.UserModel{}, err
+		return models.User{}, err
 	}
 	return user, err
 }
