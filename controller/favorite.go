@@ -34,12 +34,15 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	videoId, err := strconv.Atoi(videoIdstr)
 	if err != nil {
 		fmt.Println("videoId转换成int类型出错")
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
+		return
 	}
 	//通过用户编号和视频编号查询视频是否出现在点赞列表
 	res := db.Model(&models.Favorite{}).Where("UserId = ? AND VideoId = ?", userId, videoId).Find(&user)
 	//对查询过程的错误进行处理
 	if res.Error != nil {
 		fmt.Printf("点赞操作在查询数据库时出错：%v", res.Error)
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(res.Error)
 		return
 	}
@@ -54,6 +57,7 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	//对插入结果进行错误处理
 	if res.Error != nil {
 		fmt.Printf("点赞视频插入到数据库中出错：%v", res.Error)
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(res.Error)
 	}
 }
@@ -66,6 +70,8 @@ func CancelThumbUp(db *gorm.DB, c *gin.Context) {
 	videoId, err := strconv.Atoi(videoIdstr)
 	if err != nil {
 		fmt.Println("videoId转换成int类型出错")
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
+
 	}
 	//执行删除操作
 	favorite := models.Favorite{
@@ -89,6 +95,7 @@ func FavoriteAction(c *gin.Context) {
 	db, err := ConnectDatabase(dbdsn)
 	if err != nil {
 		//fmt.Println("数据库失败")
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(err)
 	}
 	fmt.Println("数据库连接成功")
@@ -96,6 +103,7 @@ func FavoriteAction(c *gin.Context) {
 	user, err := GetUserModelByToken(token)
 	if err != nil {
 		fmt.Printf("通过token获取user失败: %v ", err)
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(err)
 	}
 	//获取操作请求，根据请求实现操作，点赞和取消点赞
