@@ -26,7 +26,6 @@ func ConnectDatabase(dbdsn string) (*gorm.DB, error) {
 	否则返回直接返回结果（StatusCode值为0，即代表正常执行）；取消点赞类似
 
 */
-// FavoriteAction no practical effect, just check if token is valid
 func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	//查询用户编号
 	userId := user.Id
@@ -38,17 +37,28 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	}
 	//通过用户编号和视频编号查询视频是否出现在点赞列表
 	res := db.Model(&models.Favorite{}).Where("UserId = ? AND VideoId = ?", userId, videoId).Find(&user)
-	if res == nil {
-		favorite := models.Favorite{
-			UserId:    userId,
-			VideoId:   int64(videoId),
-			CreatedAt: time.Now(),
-		}
-		db.Select("UserId", "VideoId", "CreatedAt").Create(&favorite)
+	//对查询过程的错误进行处理
+	if res.Error != nil {
+		fmt.Printf("点赞操作在查询数据库时出错：%v", res.Error)
+		log.Fatalln(res.Error)
+		return
+	}
+	//定义一个结构体用于存储查询的数据
+	favorite := models.Favorite{
+		UserId:    userId,
+		VideoId:   int64(videoId),
+		CreatedAt: time.Now(),
+	}
+	//把点赞视频的数据插入到favorite表中
+	res = db.Select("UserId", "VideoId", "CreatedAt").Create(&favorite)
+	//对插入结果进行错误处理
+	if res.Error != nil {
+		fmt.Printf("点赞视频插入到数据库中出错：%v", res.Error)
+		log.Fatalln(res.Error)
 	}
 }
 
-//取消点赞操作
+// CancelThumbUp 取消点赞操作
 func CancelThumbUp(db *gorm.DB, c *gin.Context) {
 	//根据videoID将记录从数据库删除
 	//获取videoId
@@ -82,6 +92,7 @@ func FavoriteAction(c *gin.Context) {
 		log.Fatalln(err)
 	}
 	fmt.Println("数据库连接成功")
+	//根据token获取用户信息
 	user, err := GetUserModelByToken(token)
 	if err != nil {
 		fmt.Printf("通过token获取user失败: %v ", err)
@@ -92,8 +103,14 @@ func FavoriteAction(c *gin.Context) {
 	//获取actionType 1点赞 2取消点赞
 	if ActionType == "1" {
 		ThumbUp(user, db, c)
+		c.JSON(http.StatusOK, models.Response{
+			StatusCode: 0,
+		})
 	} else if ActionType == "2" {
 		CancelThumbUp(db, c)
+		c.JSON(http.StatusOK, models.Response{
+			StatusCode: 0,
+		})
 	}
 
 }

@@ -110,7 +110,6 @@ func Login(c *gin.Context) {
 	// 获取输入信息
 	username := c.Query("username")
 	password := c.Query("password")
-
 	// TODO 查询数据库前先做基本的数据合法性检查
 
 	// 尝试登录
