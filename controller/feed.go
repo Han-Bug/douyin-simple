@@ -2,6 +2,7 @@ package controller
 
 import (
 	"douyin-simple/models"
+	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -30,7 +31,8 @@ func Feed(c *gin.Context) {
 		user, err = GetUserModelByToken(token)
 		if err != nil {
 			// TODO 将错误打印至日志中
-			fmt.Println(err)
+			fmt.Println("获取用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			user = models.User{
 				Id: -1,
 			}
@@ -43,7 +45,8 @@ func Feed(c *gin.Context) {
 
 	if err != nil {
 		// TODO 将错误打印至日志中
-		fmt.Println(err)
+		fmt.Println("feed在数据库连接出错", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when reading video data",
@@ -69,7 +72,8 @@ func Feed(c *gin.Context) {
 		authorRes, err2 := GetUserByUserModel(author, user.Id)
 		if err2 != nil {
 			// TODO 将错误打印至日志中
-			fmt.Println(err)
+			fmt.Println("获取用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{
 				StatusCode: 1,
 				StatusMsg:  "error occur when getting author data",

@@ -2,10 +2,12 @@ package controller
 
 import (
 	models "douyin-simple/models"
+	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,15 +24,18 @@ type CommentListResponse struct {
 
 // CommentAction no practical effect, just check if token is valid
 func CommentAction(c *gin.Context) {
-
 	token := c.Query("token")
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad video_id"})
+		log.Println("CommentAction函数在解析video_id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		return
 	}
 	user, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("CommentAction中获取用户信息时出错:", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -45,7 +50,8 @@ func CommentAction(c *gin.Context) {
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("CommentAction中连接数据库出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -68,11 +74,15 @@ func CommentAction(c *gin.Context) {
 		}
 		db.Create(&comment)
 		if db.Error != nil {
+			fmt.Println("创建评论时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when creating comment"})
 			return
 		}
 		userRes, err := GetUserByUserModel(user, user.Id)
 		if err != nil {
+			fmt.Println("获取用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
@@ -88,12 +98,16 @@ func CommentAction(c *gin.Context) {
 	} else if actionType == "2" {
 		commentId, err := strconv.ParseInt(c.PostForm("comment_id"), 10, 64)
 		if err != nil {
+			fmt.Println("CommentAction中在解析comment_id时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad comment_id"})
 			return
 		}
 		// 删除评论
 		db.Delete(&models.Comment{}, commentId)
 		if db.Error != nil {
+			fmt.Println("删除评论时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when deleting comment"})
 			return
 		}
@@ -109,11 +123,15 @@ func CommentList(c *gin.Context) {
 	token := c.Query("token")
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	if err != nil {
+		fmt.Println("解析video_id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad video_id"})
 		return
 	}
 	user, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("CommentList中在通过token获取用户数据时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -123,7 +141,8 @@ func CommentList(c *gin.Context) {
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -137,6 +156,8 @@ func CommentList(c *gin.Context) {
 		db.Where("user_id = ?", comments[i].UserId).First(author)
 		authorRes, err := GetUserByUserModel(author, user.Id)
 		if err != nil {
+			fmt.Println("获取用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}

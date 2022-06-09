@@ -2,6 +2,7 @@ package controller
 
 import (
 	"douyin-simple/models"
+	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -21,11 +22,15 @@ func RelationAction(c *gin.Context) {
 	token := c.Query("token")
 	targetUserId, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 	if err != nil {
+		fmt.Println("解析用户id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad to_user_id"})
 		return
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -40,7 +45,8 @@ func RelationAction(c *gin.Context) {
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -65,6 +71,8 @@ func RelationAction(c *gin.Context) {
 				CreatedAt:  time.Time{},
 			})
 			if db.Error != nil {
+				fmt.Println("向Relation表中插入数据时出错：", err)
+				utils.PrintLog(err, "[Error]")
 				c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when creating relation"})
 				return
 			}
@@ -77,6 +85,8 @@ func RelationAction(c *gin.Context) {
 		if isRelated {
 			db.Where("follower_id = ? AND user_id = ?", curUser.Id, targetUserId).Delete(&models.Relation{})
 			if db.Error != nil {
+				fmt.Println("从数据库查询关注信息时出错：", err)
+				utils.PrintLog(err, "[Error]")
 				c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when creating relation"})
 				return
 			}
@@ -96,11 +106,15 @@ func FollowList(c *gin.Context) {
 	token := c.Query("token")
 	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
+		fmt.Println("FollowList函数中解析user_id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad user_id"})
 		return
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -110,7 +124,8 @@ func FollowList(c *gin.Context) {
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("连接数据库出错：：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -118,7 +133,8 @@ func FollowList(c *gin.Context) {
 	// 获取关系对象
 	db.Where("follower_id = ?", userId).Find(&relations)
 	if db.Error != nil {
-		fmt.Println(err)
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting relations"})
 		return
 	}
@@ -126,11 +142,15 @@ func FollowList(c *gin.Context) {
 	for i := 0; i < len(relations); i++ {
 		user, err := GetUserModelById(relations[i].UserId)
 		if err != nil {
+			fmt.Println("从数据库查询用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
 		userRes, err := GetUserByUserModel(user, curUser.Id)
 		if err != nil {
+			fmt.Println("从数据库查询用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
@@ -147,11 +167,15 @@ func FollowerList(c *gin.Context) {
 	token := c.Query("token")
 	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
+		fmt.Println("FollowerList函数解析用户id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad user_id"})
 		return
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -161,7 +185,8 @@ func FollowerList(c *gin.Context) {
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -169,7 +194,8 @@ func FollowerList(c *gin.Context) {
 	// 获取关系对象
 	db.Where("user_id = ?", userId).Find(&relations)
 	if db.Error != nil {
-		fmt.Println(err)
+		fmt.Println("获取关系对象时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting relations"})
 		return
 	}
@@ -177,11 +203,15 @@ func FollowerList(c *gin.Context) {
 	for i := 0; i < len(relations); i++ {
 		user, err := GetUserModelById(relations[i].FollowerId)
 		if err != nil {
+			fmt.Println("从数据库查询用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
 		userRes, err := GetUserByUserModel(user, curUser.Id)
 		if err != nil {
+			fmt.Println("从数据库查询用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}

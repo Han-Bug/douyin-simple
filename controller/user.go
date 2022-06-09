@@ -3,6 +3,7 @@ package controller
 import (
 	"douyin-simple/models"
 	"douyin-simple/units"
+	"douyin-simple/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -66,7 +67,8 @@ func Register(c *gin.Context) {
 	user, err := GetUserModelByPwd(username, password)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(err)
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when try login "},
 		})
@@ -82,7 +84,8 @@ func Register(c *gin.Context) {
 	newUser, err := DoRegister(username, password)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(err)
+		fmt.Println("注册过程出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when register "},
 		})
@@ -92,7 +95,8 @@ func Register(c *gin.Context) {
 	token, err := MakeToken(username, password)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(err)
+		fmt.Println("创建token时出错", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when making token "},
 		})
@@ -116,7 +120,8 @@ func Login(c *gin.Context) {
 	user, err := GetUserModelByPwd(username, password)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(err)
+		fmt.Println("登录过程中从数据库查询信息时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when logging"},
 		})
@@ -140,7 +145,8 @@ func Login(c *gin.Context) {
 	token, err := MakeToken(username, password)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(err)
+		fmt.Println("登录过程生成token时出错:", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when making token"},
 		})
@@ -163,7 +169,8 @@ func DoRegister(username string, password string) (newUser models.User, err erro
 	)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("DoRegister注册过程连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		return models.User{}, err
 	}
 
@@ -180,7 +187,8 @@ func DoRegister(username string, password string) (newUser models.User, err erro
 	res := db.Create(&newUser)
 	if res.Error != nil {
 		// TODO 将错误信息打印至日志中
-		fmt.Println(res.Error)
+		fmt.Println("创建用户信息时出错：", res.Error)
+		utils.PrintLog(err, "[Error]")
 		return models.User{}, err
 	}
 
@@ -196,7 +204,8 @@ func GetUserModelByPwd(username string, password string) (user models.User, err 
 
 	// TODO 将错误打印至日志中
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		return models.User{}, err
 	}
 	// 密码加密
@@ -207,17 +216,24 @@ func GetUserModelByPwd(username string, password string) (user models.User, err 
 	res := db.Model(&models.User{}).Where("name = ? AND password = ?", username, encPwd).Find(&user)
 	if res.Error != nil {
 		// TODO 将错误打印至日志中
-		fmt.Println(res.Error)
+		fmt.Println("查询用户信息时出现错误:", res.Error)
+		utils.PrintLog(err, "[Error]")
 		return models.User{}, res.Error
 	}
 
 	return user, nil
 }
+
+// TODO 有一个处理错误的过程没有返回数据
 func GetUserByUserModel(userModel models.User, curUserId int64) (user models.UserRes, err error) {
 	// 连接数据库
 	db, err := gorm.Open(
 		mysql.Open(dbdsn),
 	)
+	if err != nil {
+		fmt.Println("连接出数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
+	}
 	// 查询用户关注总数
 	var followCount int64
 	db.Model(&models.Relation{}).Where("follower_id = ?", user.Id).Count(&followCount)
@@ -254,7 +270,8 @@ func GetUserModelById(userId int64) (user models.User, err error) {
 
 	if err != nil {
 		// TODO 将错误打印至日志中
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		return models.User{}, err
 	}
 
@@ -273,7 +290,8 @@ func GetUserModelByToken(token string) (user models.User, err error) {
 	des, err := units.DecryptDes(token, []byte(TOKEN_KEY))
 	if err != nil {
 		// TODO 将错误打印至日志
-		fmt.Println(err)
+		fmt.Println("GetUserModelByToken函数在解析token时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		return models.User{}, err
 	}
 
@@ -290,12 +308,15 @@ func GetUserModelByToken(token string) (user models.User, err error) {
 	if err != nil {
 		// TODO 将错误打印至日志
 		fmt.Println("token解析失败", des)
+		utils.PrintLog(err, "[Error]")
 		return models.User{}, errors.New("token解析失败")
 	}
 
 	// 获取用户信息
 	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password)
 	if err != nil {
+		fmt.Println("GetUserModelByToken函数中获取用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		return models.User{}, err
 	}
 	return user, err
@@ -309,11 +330,15 @@ func MakeToken(username string, password string) (token string, err error) {
 	}
 	data, err := json.Marshal(tokenData)
 	if err != nil {
+		fmt.Println("MakeToken中在序列化takenData时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		return "", err
 	}
 	deToken := strings.Join([]string{TOKEN_PREKEY, string(data)}, "")
 	des, err := units.EncryptDes(deToken, []byte(TOKEN_KEY))
 	if err != nil {
+		fmt.Println("EncryptDes加密过程出错：", err)
+		utils.PrintLog(err, "[Error]")
 		return "", err
 	}
 	return des, nil
@@ -322,6 +347,8 @@ func UserInfo(c *gin.Context) {
 	// 获取当前用户编号
 	curUserId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
+		fmt.Println("UserInfo中解析user_id时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, UserResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "bad id"},
 		})
@@ -332,6 +359,8 @@ func UserInfo(c *gin.Context) {
 	// 解析token，获取用户数据库信息
 	userModel, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("UserInfo函数在解析token从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, UserResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "bad token"},
 		})
@@ -340,6 +369,8 @@ func UserInfo(c *gin.Context) {
 	// 获取用户详细信息
 	user, err := GetUserByUserModel(userModel, curUserId)
 	if err != nil {
+		fmt.Println("UserInfo获取用户详细信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, UserResponse{
 			Response: models.Response{StatusCode: 1, StatusMsg: "error occurred when getting user"},
 		})

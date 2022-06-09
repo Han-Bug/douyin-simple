@@ -2,6 +2,7 @@ package controller
 
 import (
 	"douyin-simple/models"
+	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -34,6 +35,7 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	videoId, err := strconv.Atoi(videoIdstr)
 	if err != nil {
 		fmt.Println("videoId转换成int类型出错")
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -42,6 +44,7 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	//对查询过程的错误进行处理
 	if res.Error != nil {
 		fmt.Printf("点赞操作在查询数据库时出错：%v", res.Error)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(res.Error)
 		return
@@ -57,6 +60,7 @@ func ThumbUp(user models.User, db *gorm.DB, c *gin.Context) {
 	//对插入结果进行错误处理
 	if res.Error != nil {
 		fmt.Printf("点赞视频插入到数据库中出错：%v", res.Error)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(res.Error)
 	}
@@ -70,6 +74,7 @@ func CancelThumbUp(db *gorm.DB, c *gin.Context) {
 	videoId, err := strconv.Atoi(videoIdstr)
 	if err != nil {
 		fmt.Println("videoId转换成int类型出错")
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 
 	}
@@ -94,7 +99,8 @@ func FavoriteAction(c *gin.Context) {
 	dbdsn := "douyin:665577733_douYIN@tcp(119.23.68.131:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := ConnectDatabase(dbdsn)
 	if err != nil {
-		//fmt.Println("数据库失败")
+		fmt.Println("数据库连接失败：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(err)
 	}
@@ -103,6 +109,7 @@ func FavoriteAction(c *gin.Context) {
 	user, err := GetUserModelByToken(token)
 	if err != nil {
 		fmt.Printf("通过token获取user失败: %v ", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		log.Fatalln(err)
 	}

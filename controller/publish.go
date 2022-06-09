@@ -2,6 +2,7 @@ package controller
 
 import (
 	"douyin-simple/models"
+	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -36,6 +37,8 @@ func Publish(c *gin.Context) {
 	// 解析token
 	user, err := GetUserModelByToken(token)
 	if err != nil {
+		fmt.Println("解析token出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1, StatusMsg: "bad token",
 		})
@@ -44,6 +47,8 @@ func Publish(c *gin.Context) {
 	// 将视频文件存入data
 	data, err := c.FormFile("data")
 	if err != nil {
+		fmt.Println("视频文件放入data时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1, StatusMsg: "video data error",
 		})
@@ -58,6 +63,8 @@ func Publish(c *gin.Context) {
 	// 保存文件
 	filePath := filepath.Join("/public/video/", finalName)
 	if err := c.SaveUploadedFile(data, "."+filePath); err != nil {
+		fmt.Println("保存文件时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  err.Error(),
@@ -72,7 +79,8 @@ func Publish(c *gin.Context) {
 
 	if err != nil {
 		// TODO 将错误打印至日志中
-		fmt.Println(err)
+		fmt.Println("连接数据库时出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when saving video data",
@@ -94,6 +102,8 @@ func Publish(c *gin.Context) {
 	}
 	res := db.Create(&video)
 	if res.Error != nil {
+		fmt.Println("视频在存入数据库时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when saving video data",
@@ -112,6 +122,8 @@ func PublishList(c *gin.Context) {
 	userId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	// 如果目标用户id数据错误
 	if err != nil {
+		fmt.Println("目标用户的id数据有误：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "bad id"})
@@ -122,6 +134,8 @@ func PublishList(c *gin.Context) {
 	if token != "" {
 		curUser, err = GetUserModelByToken(token)
 		if err != nil {
+			fmt.Println("PublishList中获取用户信息时出错：", err)
+			utils.PrintLog(err, "[Error]")
 			curUser = models.User{
 				Id: -1,
 			}
@@ -130,6 +144,8 @@ func PublishList(c *gin.Context) {
 	// 获取指定用户数据库信息
 	author, err2 := GetUserModelById(userId)
 	if err2 != nil {
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "author not exist"})
@@ -138,6 +154,8 @@ func PublishList(c *gin.Context) {
 	// 获取指定用户详细信息 包含是否关注了该用户
 	authorRes, err := GetUserByUserModel(author, curUser.Id)
 	if err != nil {
+		fmt.Println("从数据库查询用户信息时出错：", err)
+		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when getting author info"})
@@ -149,7 +167,8 @@ func PublishList(c *gin.Context) {
 	)
 	if err != nil {
 		// TODO 将错误打印至日志中
-		fmt.Println(err)
+		fmt.Println("连接数据库出错：", err)
+		utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when reading author data",
