@@ -13,9 +13,16 @@ import (
 	"time"
 )
 
-func ConnectDatabase(dbdsn string) (*gorm.DB, error) {
+func ConnectDatabase(dbdsn string, c *gin.Context) *gorm.DB {
 	db, err := gorm.Open(mysql.Open(dbdsn), &gorm.Config{})
-	return db, err
+	if err != nil {
+		fmt.Println("数据库连接失败：", err)
+		utils.PrintLog(err, "[Fatal]")
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
+		log.Fatalln(err)
+	}
+	fmt.Println("数据库连接成功")
+	return db
 }
 
 /*
@@ -97,14 +104,7 @@ func FavoriteAction(c *gin.Context) {
 	}
 	//链接数据库
 	dbdsn := "douyin:665577733_douYIN@tcp(119.23.68.131:3306)/douyin?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := ConnectDatabase(dbdsn)
-	if err != nil {
-		fmt.Println("数据库连接失败：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
-		log.Fatalln(err)
-	}
-	fmt.Println("数据库连接成功")
+	db := ConnectDatabase(dbdsn, c)
 	//根据token获取用户信息
 	user, err := GetUserModelByToken(token)
 	if err != nil {

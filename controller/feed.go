@@ -5,8 +5,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"net/http"
 	"time"
 )
@@ -39,20 +37,21 @@ func Feed(c *gin.Context) {
 		}
 	}
 	// 连接数据库
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-
-	if err != nil {
-		// TODO 将错误打印至日志中
-		fmt.Println("feed在数据库连接出错", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{
-			StatusCode: 1,
-			StatusMsg:  "error occur when reading video data",
-		})
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//
+	//if err != nil {
+	//	// TODO 将错误打印至日志中
+	//	fmt.Println("feed在数据库连接出错", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{
+	//		StatusCode: 1,
+	//		StatusMsg:  "error occur when reading video data",
+	//	})
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	var videos []models.Video
 	//db.Where("created_at > ?",).Order("created_at desc").Limit(20).Find(&videos)
 	db.Order("created_at desc").Limit(20).Find(&videos)
@@ -69,8 +68,8 @@ func Feed(c *gin.Context) {
 		// 查询视频的作者信息
 		var author models.User
 		db.Where("user_id = ?", videos[i].UserId).First(&author)
-		authorRes, err2 := GetUserByUserModel(author, user.Id)
-		if err2 != nil {
+		authorRes, err := GetUserByUserModel(author, user.Id)
+		if err != nil {
 			// TODO 将错误打印至日志中
 			fmt.Println("获取用户信息时出错：", err)
 			utils.PrintLog(err, "[Error]")

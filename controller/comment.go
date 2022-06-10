@@ -5,7 +5,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -45,7 +44,8 @@ func CommentAction(c *gin.Context) {
 		return
 	}
 	// &数据库连接
-	db, err := gorm.Open(
+
+	/*db, err := gorm.Open(
 		mysql.Open(dbdsn),
 	)
 	// TODO 将错误信息打印至日志中
@@ -54,7 +54,10 @@ func CommentAction(c *gin.Context) {
 		utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
-	}
+	}*/
+
+	db := ConnectDatabase(dbdsn, c)
+
 	if actionType == "1" {
 		// 发布评论
 		content := c.PostForm("comment_text")
@@ -136,16 +139,17 @@ func CommentList(c *gin.Context) {
 		return
 	}
 	// &数据库连接
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	// TODO 将错误信息打印至日志中
-	if err != nil {
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//// TODO 将错误信息打印至日志中
+	//if err != nil {
+	//	fmt.Println("连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	// 获取评论列表
 	var comments []models.Comment
 	db.Where("video_id = ?", videoId).Order("created_at desc").Find(&comments)

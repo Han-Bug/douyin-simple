@@ -64,7 +64,7 @@ func Register(c *gin.Context) {
 	password := c.Query("password")
 
 	// 先尝试登录
-	user, err := GetUserModelByPwd(username, password)
+	user, err := GetUserModelByPwd(username, password, c)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
 		fmt.Println("从数据库查询用户信息时出错：", err)
@@ -81,7 +81,7 @@ func Register(c *gin.Context) {
 		return
 	}
 	// 进行注册
-	newUser, err := DoRegister(username, password)
+	newUser, err := DoRegister(username, password, c)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
 		fmt.Println("注册过程出错：", err)
@@ -117,7 +117,7 @@ func Login(c *gin.Context) {
 	// TODO 查询数据库前先做基本的数据合法性检查
 
 	// 尝试登录
-	user, err := GetUserModelByPwd(username, password)
+	user, err := GetUserModelByPwd(username, password, c)
 	if err != nil {
 		// TODO 将错误信息打印至日志中
 		fmt.Println("登录过程中从数据库查询信息时出错：", err)
@@ -161,18 +161,19 @@ func Login(c *gin.Context) {
 
 }
 
-func DoRegister(username string, password string) (newUser models.User, err error) {
+func DoRegister(username string, password string, c *gin.Context) (newUser models.User, err error) {
 
 	// &数据库连接
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	// TODO 将错误信息打印至日志中
-	if err != nil {
-		fmt.Println("DoRegister注册过程连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		return models.User{}, err
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//// TODO 将错误信息打印至日志中
+	//if err != nil {
+	//	fmt.Println("DoRegister注册过程连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	return models.User{}, err
+	//}
+	db := ConnectDatabase(dbdsn, c)
 
 	// TODO 数据有效性验证
 
@@ -196,18 +197,20 @@ func DoRegister(username string, password string) (newUser models.User, err erro
 }
 
 // GetUserModelByPwd 通过帐号密码在数据库中查找相关用户，并返回用户数据
-func GetUserModelByPwd(username string, password string) (user models.User, err error) {
+func GetUserModelByPwd(username string, password string, c *gin.Context) (user models.User, err error) {
 	// 连接数据库
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//
+	//// TODO 将错误打印至日志中
+	//if err != nil {
+	//	fmt.Println("连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	return models.User{}, err
+	//}
+	db := ConnectDatabase(dbdsn, c)
 
-	// TODO 将错误打印至日志中
-	if err != nil {
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		return models.User{}, err
-	}
 	// 密码加密
 	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
 
@@ -262,19 +265,19 @@ func GetUserByUserModel(userModel models.User, curUserId int64) (user models.Use
 	return user, nil
 }
 
-func GetUserModelById(userId int64) (user models.User, err error) {
+func GetUserModelById(userId int64, c *gin.Context) (user models.User, err error) {
 	// 连接数据库
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-
-	if err != nil {
-		// TODO 将错误打印至日志中
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		return models.User{}, err
-	}
-
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//
+	//if err != nil {
+	//	// TODO 将错误打印至日志中
+	//	fmt.Println("连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	return models.User{}, err
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	user = models.User{}
 	// 执行查询
 	db.First(&user, userId)
@@ -285,7 +288,7 @@ func GetUserModelById(userId int64) (user models.User, err error) {
 //GetUserModelByToken 根据token获取用户信息
 // 当token解析失败或无效时err不为空
 // 当err为空时必定返回解析后的用户
-func GetUserModelByToken(token string) (user models.User, err error) {
+func GetUserModelByToken(token string, c *gin.Context) (user models.User, err error) {
 	// 解码token
 	des, err := units.DecryptDes(token, []byte(TOKEN_KEY))
 	if err != nil {
@@ -313,7 +316,7 @@ func GetUserModelByToken(token string) (user models.User, err error) {
 	}
 
 	// 获取用户信息
-	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password)
+	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password, c)
 	if err != nil {
 		fmt.Println("GetUserModelByToken函数中获取用户信息时出错：", err)
 		utils.PrintLog(err, "[Error]")
@@ -357,7 +360,7 @@ func UserInfo(c *gin.Context) {
 	// 获取token
 	token := c.Query("token")
 	// 解析token，获取用户数据库信息
-	userModel, err := GetUserModelByToken(token)
+	userModel, err := GetUserModelByToken(token, c)
 	if err != nil {
 		fmt.Println("UserInfo函数在解析token从数据库查询用户信息时出错：", err)
 		utils.PrintLog(err, "[Error]")

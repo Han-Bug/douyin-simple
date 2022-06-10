@@ -5,7 +5,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"net/http"
 	"path/filepath"
@@ -73,21 +72,23 @@ func Publish(c *gin.Context) {
 	}
 	// 在数据库中存储相关视频信息
 	// 连接数据库
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
 
-	if err != nil {
-		// TODO 将错误打印至日志中
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{
-			StatusCode: 1,
-			StatusMsg:  "error occur when saving video data",
-		})
-		// TODO 将已下载的视频文件删除
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//
+	//if err != nil {
+	//	// TODO 将错误打印至日志中
+	//	fmt.Println("连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{
+	//		StatusCode: 1,
+	//		StatusMsg:  "error occur when saving video data",
+	//	})
+	//	// TODO 将已下载的视频文件删除
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	videoUrl := strings.Join([]string{BASE_URL, filePath}, "")
 	// TODO 从视频中截取封面
 	// 此处使用的是临时封面
@@ -142,7 +143,7 @@ func PublishList(c *gin.Context) {
 		}
 	}
 	// 获取指定用户数据库信息
-	author, err2 := GetUserModelById(userId)
+	author, err2 := GetUserModelById(userId, c)
 	if err2 != nil {
 		fmt.Println("从数据库查询用户信息时出错：", err)
 		utils.PrintLog(err, "[Error]")
@@ -162,19 +163,20 @@ func PublishList(c *gin.Context) {
 		return
 	}
 	// 获取用户的发布列表
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	if err != nil {
-		// TODO 将错误打印至日志中
-		fmt.Println("连接数据库出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{
-			StatusCode: 1,
-			StatusMsg:  "error occur when reading author data",
-		})
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//if err != nil {
+	//	// TODO 将错误打印至日志中
+	//	fmt.Println("连接数据库出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{
+	//		StatusCode: 1,
+	//		StatusMsg:  "error occur when reading author data",
+	//	})
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	var videos []models.Video
 	db.Where("user_id = ?", author.Id).Order("created_at desc").Find(&videos)
 	var videoReses []models.VideoRes

@@ -40,16 +40,17 @@ func RelationAction(c *gin.Context) {
 		return
 	}
 	// &数据库连接
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	// TODO 将错误信息打印至日志中
-	if err != nil {
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//// TODO 将错误信息打印至日志中
+	//if err != nil {
+	//	fmt.Println("连接数据库时出错：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	// 查看是否已经关注
 	isRelated := false
 	var relations []models.Relation
@@ -119,16 +120,17 @@ func FollowList(c *gin.Context) {
 		return
 	}
 	// &数据库连接
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	// TODO 将错误信息打印至日志中
-	if err != nil {
-		fmt.Println("连接数据库出错：：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
-		return
-	}
+	//db, err := gorm.Open(
+	//	mysql.Open(dbdsn),
+	//)
+	//// TODO 将错误信息打印至日志中
+	//if err != nil {
+	//	fmt.Println("连接数据库出错：：", err)
+	//	utils.PrintLog(err, "[Fatal]")
+	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
+	//	return
+	//}
+	db := ConnectDatabase(dbdsn, c)
 	var relations []models.Relation
 	// 获取关系对象
 	db.Where("follower_id = ?", userId).Find(&relations)
@@ -140,7 +142,7 @@ func FollowList(c *gin.Context) {
 	}
 	var userList []models.UserRes
 	for i := 0; i < len(relations); i++ {
-		user, err := GetUserModelById(relations[i].UserId)
+		user, err := GetUserModelById(relations[i].UserId, c)
 		if err != nil {
 			fmt.Println("从数据库查询用户信息时出错：", err)
 			utils.PrintLog(err, "[Error]")
@@ -201,7 +203,7 @@ func FollowerList(c *gin.Context) {
 	}
 	var userList []models.UserRes
 	for i := 0; i < len(relations); i++ {
-		user, err := GetUserModelById(relations[i].FollowerId)
+		user, err := GetUserModelById(relations[i].FollowerId, c)
 		if err != nil {
 			fmt.Println("从数据库查询用户信息时出错：", err)
 			utils.PrintLog(err, "[Error]")
