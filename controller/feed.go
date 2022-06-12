@@ -51,7 +51,10 @@ func Feed(c *gin.Context) {
 	//	})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+	}
 	var videos []models.Video
 	//db.Where("created_at > ?",).Order("created_at desc").Limit(20).Find(&videos)
 	db.Order("created_at desc").Limit(20).Find(&videos)

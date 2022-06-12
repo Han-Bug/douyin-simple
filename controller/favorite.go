@@ -5,7 +5,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -13,17 +12,17 @@ import (
 	"time"
 )
 
-func ConnectDatabase(dbdsn string, c *gin.Context) *gorm.DB {
-	db, err := gorm.Open(mysql.Open(dbdsn), &gorm.Config{})
-	if err != nil {
-		fmt.Println("数据库连接失败：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
-		log.Fatalln(err)
-	}
-	fmt.Println("数据库连接成功")
-	return db
-}
+//func ConnectDatabase(dbdsn string, c *gin.Context) *gorm.DB {
+//	db, err := gorm.Open(mysql.Open(dbdsn), &gorm.Config{})
+//	if err != nil {
+//		fmt.Println("数据库连接失败：", err)
+//		utils.PrintLog(err, "[Fatal]")
+//		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
+//		log.Fatalln(err)
+//	}
+//	fmt.Println("数据库连接成功")
+//	return db
+//}
 
 /*
 	如果是点赞功能的话：
