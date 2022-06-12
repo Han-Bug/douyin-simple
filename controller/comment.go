@@ -33,8 +33,8 @@ func CommentAction(c *gin.Context) {
 	}
 	user, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("CommentAction中获取用户信息时出错:", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("CommentAction中获取用户信息时出错:", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -56,8 +56,11 @@ func CommentAction(c *gin.Context) {
 		return
 	}*/
 
-	db := ConnectDatabase(dbdsn, c)
-
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	if actionType == "1" {
 		// 发布评论
 		content := c.PostForm("comment_text")
@@ -84,8 +87,8 @@ func CommentAction(c *gin.Context) {
 		}
 		userRes, err := GetUserByUserModel(user, user.Id)
 		if err != nil {
-			fmt.Println("获取用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("获取用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
@@ -133,8 +136,8 @@ func CommentList(c *gin.Context) {
 	}
 	user, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("CommentList中在通过token获取用户数据时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("CommentList中在通过token获取用户数据时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -149,7 +152,15 @@ func CommentList(c *gin.Context) {
 	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		//c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		c.JSON(http.StatusOK, models.Response{
+			StatusCode: 1,
+			StatusMsg:  "an error occur when connecting database",
+		})
+		return
+	}
 	// 获取评论列表
 	var comments []models.Comment
 	db.Where("video_id = ?", videoId).Order("created_at desc").Find(&comments)

@@ -36,8 +36,8 @@ func Publish(c *gin.Context) {
 	// 解析token
 	user, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("解析token出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("解析token出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1, StatusMsg: "bad token",
 		})
@@ -88,7 +88,11 @@ func Publish(c *gin.Context) {
 	//	// TODO 将已下载的视频文件删除
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	videoUrl := strings.Join([]string{BASE_URL, filePath}, "")
 	// TODO 从视频中截取封面
 	// 此处使用的是临时封面
@@ -135,8 +139,8 @@ func PublishList(c *gin.Context) {
 	if token != "" {
 		curUser, err = GetUserModelByToken(token)
 		if err != nil {
-			fmt.Println("PublishList中获取用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("PublishList中获取用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			curUser = models.User{
 				Id: -1,
 			}
@@ -145,8 +149,8 @@ func PublishList(c *gin.Context) {
 	// 获取指定用户数据库信息
 	author, err2 := GetUserModelById(userId, c)
 	if err2 != nil {
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("从数据库查询用户信息时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "author not exist"})
@@ -155,8 +159,8 @@ func PublishList(c *gin.Context) {
 	// 获取指定用户详细信息 包含是否关注了该用户
 	authorRes, err := GetUserByUserModel(author, curUser.Id)
 	if err != nil {
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("从数据库查询用户信息时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{
 			StatusCode: 1,
 			StatusMsg:  "error occur when getting author info"})
@@ -176,7 +180,11 @@ func PublishList(c *gin.Context) {
 	//	})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	var videos []models.Video
 	db.Where("user_id = ?", author.Id).Order("created_at desc").Find(&videos)
 	var videoReses []models.VideoRes

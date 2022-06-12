@@ -5,8 +5,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,8 +27,8 @@ func RelationAction(c *gin.Context) {
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("从数据库查询用户信息时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -50,7 +48,11 @@ func RelationAction(c *gin.Context) {
 	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	// 查看是否已经关注
 	isRelated := false
 	var relations []models.Relation
@@ -114,8 +116,8 @@ func FollowList(c *gin.Context) {
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("从数据库查询用户信息时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
@@ -130,7 +132,11 @@ func FollowList(c *gin.Context) {
 	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	var relations []models.Relation
 	// 获取关系对象
 	db.Where("follower_id = ?", userId).Find(&relations)
@@ -144,15 +150,15 @@ func FollowList(c *gin.Context) {
 	for i := 0; i < len(relations); i++ {
 		user, err := GetUserModelById(relations[i].UserId, c)
 		if err != nil {
-			fmt.Println("从数据库查询用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("从数据库查询用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
 		userRes, err := GetUserByUserModel(user, curUser.Id)
 		if err != nil {
-			fmt.Println("从数据库查询用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("从数据库查询用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
@@ -176,19 +182,17 @@ func FollowerList(c *gin.Context) {
 	}
 	curUser, err := GetUserModelByToken(token)
 	if err != nil {
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		//fmt.Println("从数据库查询用户信息时出错：", err)
+		//utils.PrintLog(err, "[Error]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad token"})
 		return
 	}
 	// &数据库连接
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
+	db, err := utils.ConnectDatabase(dbdsn)
 	// TODO 将错误信息打印至日志中
 	if err != nil {
-		fmt.Println("连接数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
+		//fmt.Println("连接数据库时出错：", err)
+		//utils.PrintLog(err, "[Fatal]")
 		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "database error"})
 		return
 	}
@@ -205,15 +209,15 @@ func FollowerList(c *gin.Context) {
 	for i := 0; i < len(relations); i++ {
 		user, err := GetUserModelById(relations[i].FollowerId, c)
 		if err != nil {
-			fmt.Println("从数据库查询用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("从数据库查询用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}
 		userRes, err := GetUserByUserModel(user, curUser.Id)
 		if err != nil {
-			fmt.Println("从数据库查询用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("从数据库查询用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "error occur when getting user"})
 			return
 		}

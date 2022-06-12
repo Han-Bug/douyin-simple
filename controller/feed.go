@@ -29,8 +29,8 @@ func Feed(c *gin.Context) {
 		user, err = GetUserModelByToken(token)
 		if err != nil {
 			// TODO 将错误打印至日志中
-			fmt.Println("获取用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("获取用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			user = models.User{
 				Id: -1,
 			}
@@ -51,7 +51,11 @@ func Feed(c *gin.Context) {
 	//	})
 	//	return
 	//}
-	db := ConnectDatabase(dbdsn, c)
+	db, err := utils.ConnectDatabase(dbdsn)
+	if err != nil {
+		c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "an error occur when connecting database"})
+		return
+	}
 	var videos []models.Video
 	//db.Where("created_at > ?",).Order("created_at desc").Limit(20).Find(&videos)
 	db.Order("created_at desc").Limit(20).Find(&videos)
@@ -71,8 +75,8 @@ func Feed(c *gin.Context) {
 		authorRes, err := GetUserByUserModel(author, user.Id)
 		if err != nil {
 			// TODO 将错误打印至日志中
-			fmt.Println("获取用户信息时出错：", err)
-			utils.PrintLog(err, "[Error]")
+			//fmt.Println("获取用户信息时出错：", err)
+			//utils.PrintLog(err, "[Error]")
 			c.JSON(http.StatusOK, models.Response{
 				StatusCode: 1,
 				StatusMsg:  "error occur when getting author data",
