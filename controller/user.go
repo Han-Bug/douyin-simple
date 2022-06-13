@@ -1,19 +1,15 @@
 package controller
 
 import (
-	"douyin-simple/models"
-	"douyin-simple/units"
+	models "douyin-simple/models"
+	"douyin-simple/services"
 	"douyin-simple/utils"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
@@ -28,16 +24,6 @@ var usersLoginInfo = map[string]models.UserRes{
 		IsFollow:      true,
 	},
 }
-var (
-	dbdsn = "douyin:665577733_douYIN@tcp(119.23.68.131:3306)/douyin?parseTime=true"
-)
-
-const (
-	TOKEN_KEY           = "66557773"
-	TOKEN_PREKEY        = "DOUYIN"
-	TOKEN_PREKEY_LENGTH = 6
-	MD5_PREKEY          = "douyin"
-)
 
 type UserLoginResponse struct {
 	models.Response
@@ -63,48 +49,33 @@ func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
 
-	// 先尝试登录
-	user, err := GetUserModelByPwd(username, password, c)
-	if err != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when try login "},
-		})
+	// 查询是否已经注册
+	_, err := services.FindUserByPwd(username, password)
+	if err == nil {
+		// 如果已经注册
+		OutPutGeneralResponse(c, 1, "已存在该用户")
 		return
-	}
-	if user != (models.User{}) {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "User_Login already exist"},
-		})
-		return
-	}
-	// 进行注册
-	newUser, err := DoRegister(username, password, c)
-	if err != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("注册过程出错：", err)
-		utils.PrintLog(err, "[Error]")
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when register "},
-		})
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// 如果查询出错
+		OutPutGeneralResponse(c, 1, "数据库异常")
 		return
 	}
 
-	token, err := MakeToken(username, password)
+	// 创建用户
+	user, err := services.CreateUser(username, password)
 	if err != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("创建token时出错", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "unexpected error occur when making token "},
-		})
+		OutPutGeneralResponse(c, 1, "用户注册失败")
+		return
+	}
+	// 生成token
+	token, err := services.CreateToken(user)
+	if err != nil {
+		OutPutGeneralResponse(c, 1, "token创建失败")
 		return
 	}
 	c.JSON(http.StatusOK, UserLoginResponse{
 		Response: models.Response{StatusCode: 0},
-		UserId:   newUser.Id,
+		UserId:   user.Id,
 		Token:    token,
 	})
 }
@@ -116,40 +87,22 @@ func Login(c *gin.Context) {
 	password := c.Query("password")
 	// TODO 查询数据库前先做基本的数据合法性检查
 
-	// 尝试登录
-	user, err := GetUserModelByPwd(username, password, c)
+	// 登录
+	user, err := services.FindUserByPwd(username, password)
 	if err != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("登录过程中从数据库查询信息时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when logging"},
-		})
-		return
-	} else if user == (models.User{}) {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+		// 如果未找到匹配用户
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			OutPutGeneralResponse(c, 1, "帐号与密码不匹配或不存在该帐号")
+			return
+		}
+		// 如果查询出错
+		OutPutGeneralResponse(c, 1, "用户信息获取出错")
 		return
 	}
-	//_,err=GetUserByUserModel(user,user.Id)
-	//if err!=nil{
-	//	// TODO 将错误信息打印至日志中
-	//	fmt.Println(err)
-	//	c.JSON(http.StatusOK, UserLoginResponse{
-	//		Response: models.Response{StatusCode: 1, StatusMsg: "error occur when logging"},
-	//	})
-	//	return
-	//}
 	// 生成token
-	token, err := MakeToken(username, password)
+	token, err := services.CreateToken(user)
 	if err != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("登录过程生成token时出错:", err)
-		utils.PrintLog(err, "[Fatal]")
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "error occur when making token"},
-		})
+		OutPutGeneralResponse(c, 1, "token生成错误")
 		return
 	}
 
@@ -161,222 +114,42 @@ func Login(c *gin.Context) {
 
 }
 
-func DoRegister(username string, password string, c *gin.Context) (newUser models.User, err error) {
-
-	// &数据库连接
-	//db, err := gorm.Open(
-	//	mysql.Open(dbdsn),
-	//)
-	//// TODO 将错误信息打印至日志中
-	//if err != nil {
-	//	fmt.Println("DoRegister注册过程连接数据库时出错：", err)
-	//	utils.PrintLog(err, "[Fatal]")
-	//	return models.User{}, err
-	//}
-	db := ConnectDatabase(dbdsn, c)
-
-	// TODO 数据有效性验证
-
-	// &密码加密
-	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
-	// &创建用户对象，
-	newUser = models.User{
-		Name:     username,
-		Password: encPwd,
-	}
-	// 执行Create
-	res := db.Create(&newUser)
-	if res.Error != nil {
-		// TODO 将错误信息打印至日志中
-		fmt.Println("创建用户信息时出错：", res.Error)
-		utils.PrintLog(err, "[Error]")
-		return models.User{}, err
-	}
-
-	return newUser, nil
-}
-
-// GetUserModelByPwd 通过帐号密码在数据库中查找相关用户，并返回用户数据
-func GetUserModelByPwd(username string, password string, c *gin.Context) (user models.User, err error) {
-	// 连接数据库
-	//db, err := gorm.Open(
-	//	mysql.Open(dbdsn),
-	//)
-	//
-	//// TODO 将错误打印至日志中
-	//if err != nil {
-	//	fmt.Println("连接数据库时出错：", err)
-	//	utils.PrintLog(err, "[Fatal]")
-	//	return models.User{}, err
-	//}
-	db := ConnectDatabase(dbdsn, c)
-
-	// 密码加密
-	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
-
-	user = models.User{}
-	// 查询用户基本信息
-	res := db.Model(&models.User{}).Where("name = ? AND password = ?", username, encPwd).Find(&user)
-	if res.Error != nil {
-		// TODO 将错误打印至日志中
-		fmt.Println("查询用户信息时出现错误:", res.Error)
-		utils.PrintLog(err, "[Error]")
-		return models.User{}, res.Error
-	}
-
-	return user, nil
-}
-
-// TODO 有一个处理错误的过程没有返回数据
-func GetUserByUserModel(userModel models.User, curUserId int64) (user models.UserRes, err error) {
-	// 连接数据库
-	db, err := gorm.Open(
-		mysql.Open(dbdsn),
-	)
-	if err != nil {
-		fmt.Println("连接出数据库时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-	}
-	// 查询用户关注总数
-	var followCount int64
-	db.Model(&models.Relation{}).Where("follower_id = ?", user.Id).Count(&followCount)
-	// 查询用户粉丝总数
-	var followerCount int64
-	db.Model(&models.Relation{}).Where("user_id = ?", user.Id).Count(&followerCount)
-	// 查询是否已关注
-	var isRelatedN int64
-	// 如果用户未登录（curUser编号小于0）
-	if curUserId < 0 {
-		isRelatedN = -1
-	} else {
-		db.Model(&models.Relation{}).Where("user_id = ? AND follower_id = ?", user.Id, curUserId).Count(&isRelatedN)
-	}
-	isRelated := false
-	if isRelatedN > 0 {
-		isRelated = true
-	}
-	user = models.UserRes{
-		Id:            userModel.Id,
-		Name:          userModel.Name,
-		FollowCount:   followCount,
-		FollowerCount: followerCount,
-		IsFollow:      isRelated,
-	}
-	return user, nil
-}
-
-func GetUserModelById(userId int64, c *gin.Context) (user models.User, err error) {
-	// 连接数据库
-	//db, err := gorm.Open(
-	//	mysql.Open(dbdsn),
-	//)
-	//
-	//if err != nil {
-	//	// TODO 将错误打印至日志中
-	//	fmt.Println("连接数据库时出错：", err)
-	//	utils.PrintLog(err, "[Fatal]")
-	//	return models.User{}, err
-	//}
-	db := ConnectDatabase(dbdsn, c)
-	user = models.User{}
-	// 执行查询
-	db.First(&user, userId)
-
-	return user, nil
-}
-
 //GetUserModelByToken 根据token获取用户信息
 // 当token解析失败或无效时err不为空
 // 当err为空时必定返回解析后的用户
-func GetUserModelByToken(token string, c *gin.Context) (user models.User, err error) {
-	// 解码token
-	des, err := units.DecryptDes(token, []byte(TOKEN_KEY))
-	if err != nil {
-		// TODO 将错误打印至日志
-		fmt.Println("GetUserModelByToken函数在解析token时出错：", err)
-		utils.PrintLog(err, "[Fatal]")
-		return models.User{}, err
-	}
+//func GetUserModelByToken(token string) (user models.User, err error) {
+//
+//	// 获取用户信息
+//	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password)
+//	if err != nil {
+//		fmt.Println("GetUserModelByToken函数中获取用户信息时出错：", err)
+//		utils.PrintLog(err, "[Error]")
+//		return models.User{}, err
+//	}
+//	return user, err
+//}
 
-	// 校验token前缀符
-	sli := des[0:TOKEN_PREKEY_LENGTH]
-	if strings.Compare(sli, TOKEN_PREKEY) != 0 {
-		// TODO 将错误打印至日志
-		fmt.Println("无效的token:", des)
-		return models.User{}, errors.New("无效的token:" + des)
-	}
-	// 解析token
-	var tokenData models.TokenData
-	err = json.Unmarshal([]byte(des), &tokenData)
-	if err != nil {
-		// TODO 将错误打印至日志
-		fmt.Println("token解析失败", des)
-		utils.PrintLog(err, "[Error]")
-		return models.User{}, errors.New("token解析失败")
-	}
-
-	// 获取用户信息
-	user, err = GetUserModelByPwd(tokenData.Name, tokenData.Password, c)
-	if err != nil {
-		fmt.Println("GetUserModelByToken函数中获取用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
-		return models.User{}, err
-	}
-	return user, err
-}
-
-func MakeToken(username string, password string) (token string, err error) {
-	var tokenData = models.TokenData{
-		Name:     username,
-		Password: password,
-		CreateAt: time.Now(),
-	}
-	data, err := json.Marshal(tokenData)
-	if err != nil {
-		fmt.Println("MakeToken中在序列化takenData时出错：", err)
-		utils.PrintLog(err, "[Error]")
-		return "", err
-	}
-	deToken := strings.Join([]string{TOKEN_PREKEY, string(data)}, "")
-	des, err := units.EncryptDes(deToken, []byte(TOKEN_KEY))
-	if err != nil {
-		fmt.Println("EncryptDes加密过程出错：", err)
-		utils.PrintLog(err, "[Error]")
-		return "", err
-	}
-	return des, nil
-}
 func UserInfo(c *gin.Context) {
 	// 获取当前用户编号
 	curUserId, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
-		fmt.Println("UserInfo中解析user_id时出错：", err)
+		log.Println("UserInfo中解析user_id时出错：", err)
 		utils.PrintLog(err, "[Error]")
-		c.JSON(http.StatusOK, UserResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "bad id"},
-		})
+		OutPutGeneralResponse(c, 1, "无效的user_id")
 		return
 	}
 	// 获取token
 	token := c.Query("token")
-	// 解析token，获取用户数据库信息
-	userModel, err := GetUserModelByToken(token, c)
+	// 解析token，获取用户信息
+	tokenData, err := services.ResolveToken(token)
 	if err != nil {
-		fmt.Println("UserInfo函数在解析token从数据库查询用户信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
-		c.JSON(http.StatusOK, UserResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "bad token"},
-		})
+		OutPutGeneralResponse(c, 1, "token解析出错")
 		return
 	}
 	// 获取用户详细信息
-	user, err := GetUserByUserModel(userModel, curUserId)
+	user, err := services.GetUserResByUser(tokenData.User, curUserId)
 	if err != nil {
-		fmt.Println("UserInfo获取用户详细信息时出错：", err)
-		utils.PrintLog(err, "[Error]")
-		c.JSON(http.StatusOK, UserResponse{
-			Response: models.Response{StatusCode: 1, StatusMsg: "error occurred when getting user"},
-		})
+		OutPutGeneralResponse(c, 1, "用户信息获取失败")
 		return
 	}
 	c.JSON(http.StatusOK, UserResponse{

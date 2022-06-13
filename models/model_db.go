@@ -15,7 +15,7 @@ type User struct {
 }
 type Video struct {
 	Id        int64 `gorm:"column:video_id"`
-	UserId    string
+	UserId    int64
 	Title     string
 	PlayUrl   string
 	CoverUrl  string
