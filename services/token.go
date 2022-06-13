@@ -2,7 +2,6 @@ package services
 
 import (
 	"douyin-simple/models"
-	"douyin-simple/units"
 	"douyin-simple/utils"
 	"encoding/json"
 	"errors"
@@ -38,7 +37,7 @@ func CreateToken(user models.User) (string, error) {
 	// 拼接token字符串
 	deToken := strings.Join([]string{TokenPreKey, string(data)}, "")
 	// 加密字符串
-	des, err := units.EncryptDes(deToken, []byte(TokenKey))
+	des, err := utils.EncryptDes(deToken, []byte(TokenKey))
 	if err != nil {
 		log.Println("EncryptDes加密过程出错：", err)
 		utils.PrintLog(err, "[Error]")
@@ -51,7 +50,7 @@ func CreateToken(user models.User) (string, error) {
 // ResolveToken 解析token。若error不为nil，则token无效
 func ResolveToken(token string) (TokenData, error) {
 	// 解码token
-	des, err := units.DecryptDes(token, []byte(TokenKey))
+	des, err := utils.DecryptDes(token, []byte(TokenKey))
 	if err != nil {
 		log.Println("token进行des解码时失败", err)
 		utils.PrintLog(err, "[Info]")

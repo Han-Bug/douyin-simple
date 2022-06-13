@@ -2,7 +2,6 @@ package services
 
 import (
 	"douyin-simple/models"
-	"douyin-simple/units"
 	"douyin-simple/utils"
 	"errors"
 	"gorm.io/gorm"
@@ -22,7 +21,7 @@ func CreateUser(username string, password string) (models.User, error) {
 	}
 
 	// 密码加密
-	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
+	encPwd := utils.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
 	// 创建用户对象，
 	newUser := models.User{
 		Name:     username,
@@ -46,7 +45,7 @@ func FindUserByPwd(username string, password string) (user models.User, err erro
 		return models.User{}, err
 	}
 	// 密码加密
-	encPwd := units.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
+	encPwd := utils.EncryptMd5(strings.Join([]string{MD5_PREKEY, password}, ""))
 	user = models.User{}
 
 	// 获取用户模型
