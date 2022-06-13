@@ -25,8 +25,7 @@ func CreateVideo(title string, playUrl string, coverUrl string, userId int64) er
 	}
 	res := db.Create(&video)
 	if res.Error != nil {
-		log.Println("视频信息存储出错")
-		utils.PrintLog(res.Error, "[Error]")
+		utils.PrintLogError("视频信息存储出错:", "video:", video, "err:", res.Error)
 		return res.Error
 	}
 	return nil
@@ -40,8 +39,7 @@ func FirstVideo(videoId int64) (models.Video, error) {
 	video := models.Video{}
 	res := db.First(&video, videoId)
 	if res.Error != nil {
-		log.Println("查询视频信息时出错或不存在该视频")
-		utils.PrintLog(res.Error, "[Error]")
+		utils.PrintLogWarn("查询视频信息时出错或不存在该视频:", "videoId=", videoId, " err:", res.Error)
 		return models.Video{}, res.Error
 	}
 

@@ -5,6 +5,7 @@ import (
 	"douyin-simple/utils"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -14,7 +15,7 @@ const (
 	TokenKey          = "66557773"
 	TokenPreKey       = "DOUYIN"
 	TokenPreKeyLength = 6
-	TokenExpiration   = 24 * 60 * 60 * 1000
+	TokenExpiration   = 1 * 60 * 60 * 1000
 )
 
 type TokenData struct {
@@ -76,18 +77,19 @@ func ResolveToken(token string) (TokenData, error) {
 	// 解析token
 	var tokenData TokenData
 	err = json.Unmarshal([]byte(des[TokenPreKeyLength:]), &tokenData)
+	fmt.Println(tokenData)
 	if err != nil {
 		log.Println("token数据反序列化失败:", des)
 		utils.PrintLog(err, "[Info]")
 		return TokenData{}, errors.New("token解析失败")
 	}
-	//// 判断token是否过期
-	//dif := time.Since(time.Now()) - time.Since(tokenData.CreateAt)
-	//if dif > TokenExpiration {
-	//	err = errors.New("无效的token:" + des)
-	//	log.Println("已过期的token:", token)
-	//	utils.PrintLog(err, "[Info]")
-	//	return TokenData{}, err
-	//}
+	// 判断token是否过期
+	dif := time.Since(time.Now()) - time.Since(tokenData.CreateAt)
+	if dif > TokenExpiration {
+		err = errors.New("无效的token:" + des)
+		log.Println("已过期的token:", token)
+		utils.PrintLog(err, "[Info]")
+		return TokenData{}, err
+	}
 	return tokenData, nil
 }

@@ -6,7 +6,6 @@ import (
 	"douyin-simple/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,8 +27,7 @@ func Feed(c *gin.Context) {
 	} else {
 		tokenData, err := services.ResolveToken(token)
 		if err != nil {
-			log.Println("无效的token")
-			utils.PrintLog(err, "[Info]")
+			utils.PrintLogInfo("无效的token:", "token=", token, " err:", err)
 			user = models.User{Id: -1}
 		} else {
 			user = tokenData.User
@@ -45,8 +43,7 @@ func Feed(c *gin.Context) {
 
 		ltNum, err := strconv.ParseInt(latestTimeStr, 10, 64)
 		if err != nil {
-			log.Println("无效的latest_time")
-			utils.PrintLog(err, "[Info]")
+			utils.PrintLogInfo("无效的latest_time:", latestTime, " err:", err)
 			latestTime = time.Now()
 		} else {
 			latestTime = time.UnixMilli(ltNum)

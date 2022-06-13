@@ -38,6 +38,10 @@ func RelationAction(c *gin.Context) {
 	actionType := c.Query("action_type")
 
 	if actionType == "1" {
+		if curUser.Id == targetUserId {
+			OutPutGeneralResponse(c, 1, "不能关注自己")
+			return
+		}
 		err := services.CreateRelation(curUser.Id, targetUserId)
 		if err != nil {
 			OutPutGeneralResponse(c, 1, "关注失败或已关注")

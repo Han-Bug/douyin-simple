@@ -29,8 +29,7 @@ func CommentAction(c *gin.Context) {
 	videoId, err := strconv.ParseInt(c.Query("video_id"), 10, 64)
 	if err != nil {
 		OutPutGeneralResponse(c, 1, "bad video_id")
-		log.Println("CommentAction函数在解析video_id时出错：", err)
-		utils.PrintLog(err, "[Error]")
+		utils.PrintLogError("解析video_id时出错：", videoId, " err:", err)
 		return
 	}
 
@@ -45,12 +44,7 @@ func CommentAction(c *gin.Context) {
 
 	// 获取动作类型
 	actionType := c.Query("action_type")
-	//if actionType != "1" && actionType != "2" {
-	//	log.Println("无效的actionType")
-	//	utils.PrintLog(errors.New("ActionType error"), "[Warn]")
-	//	c.JSON(http.StatusOK, models.Response{StatusCode: 1, StatusMsg: "bad action_type"})
-	//	return
-	//}
+
 	if actionType == "1" {
 		// 发布评论
 

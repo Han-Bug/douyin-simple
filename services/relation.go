@@ -8,6 +8,7 @@ import (
 )
 
 func CreateRelation(followerId int64, userId int64) error {
+
 	db, err := ConnectDatabase(DSN)
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func FindFollowerUserList(followId int64, curUserId int64) ([]models.UserRes, er
 	var relations []models.Relation
 
 	// 获取关系对象
-	db.Where("follow_id = ?", followId).Find(&relations)
+	db.Where("user_id = ?", followId).Find(&relations)
 	if db.Error != nil {
 		log.Println("获取关系对象出错")
 		utils.PrintLog(err, "[Error]")
@@ -92,7 +93,7 @@ func FindFollowerUserList(followId int64, curUserId int64) ([]models.UserRes, er
 	var userList []models.UserRes
 	for i := 0; i < len(relations); i++ {
 
-		userRes, err := GetUserResByUserId(relations[i].UserId, curUserId)
+		userRes, err := GetUserResByUserId(relations[i].FollowerId, curUserId)
 		if err != nil {
 			continue
 		}

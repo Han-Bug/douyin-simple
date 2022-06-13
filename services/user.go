@@ -28,13 +28,21 @@ func CreateUser(username string, password string) (models.User, error) {
 		Password: encPwd,
 	}
 	// 执行Create
+	// 一个bug点：newUser在插入后获得的newUser返回值中其Id未更新
 	res := db.Create(&newUser)
 	if res.Error != nil {
-		log.Println("创建用户信息时出错：", res.Error)
-		utils.PrintLog(err, "[Error]")
-		return models.User{}, err
+		log.Println("创建用户信息时出错：")
+		utils.PrintLog(res.Error, "[Error]")
+		return models.User{}, res.Error
 	}
+	// 重新再获取用户信息
+	res = db.Where("name = ? AND password = ?", username, encPwd).First(&newUser)
+	if res.Error != nil {
+		log.Println("重获取用户信息时出错：")
+		utils.PrintLog(res.Error, "[Error]")
+		return models.User{}, res.Error
 
+	}
 	return newUser, nil
 }
 
