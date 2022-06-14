@@ -9,7 +9,7 @@ import (
 
 func CreateRelation(followerId int64, userId int64) error {
 
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func CreateRelation(followerId int64, userId int64) error {
 }
 
 func DeleteRelation(followerId int64, userId int64) error {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func DeleteRelation(followerId int64, userId int64) error {
 
 // FindFollowUserList 获取关注列表
 func FindFollowUserList(followerId int64, curUserId int64) ([]models.UserRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func FindFollowUserList(followerId int64, curUserId int64) ([]models.UserRes, er
 
 // FindFollowerUserList 获取粉丝列表
 func FindFollowerUserList(followId int64, curUserId int64) ([]models.UserRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, err
 	}

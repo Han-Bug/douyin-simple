@@ -10,7 +10,7 @@ import (
 )
 
 func CreateFavorite(userId int64, videoId int64) error {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func CreateFavorite(userId int64, videoId int64) error {
 }
 
 func DeleteFavorite(userId int64, videoId int64) error {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return err
 	}
@@ -59,24 +59,28 @@ func DeleteFavorite(userId int64, videoId int64) error {
 	return nil
 }
 
-func FirstFavorite(videoId int64, userId int64) (models.Favorite, error) {
-	db, err := ConnectDatabase(DSN)
+func FindFavorite(videoId int64, userId int64) ([]models.Favorite, error) {
+	db, err := ConnectDatabase()
 	if err != nil {
-		return models.Favorite{}, err
+		return nil, err
 	}
 
-	favorite := models.Favorite{}
-	res := db.Where("video_id = ? AND user_id = ?", videoId, userId).First(&favorite)
+	var favorite []models.Favorite
+	res := db.Where("video_id = ? AND user_id = ?", videoId, userId).Limit(1).Find(&favorite)
 	if res.Error != nil {
-		log.Println("点赞数据查询出错或无相关点赞")
+		log.Println("点赞数据查询出错")
 		utils.PrintLog(res.Error, "[Warn]")
-		return models.Favorite{}, res.Error
+		return nil, res.Error
 	}
-	return favorite, nil
+	if len(favorite) == 0 {
+		return nil, nil
+	} else {
+		return favorite, nil
+	}
 }
 
 func FindFavoriteVideoList(targetUserId int64, curUserId int64) ([]models.VideoRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, err
 	}

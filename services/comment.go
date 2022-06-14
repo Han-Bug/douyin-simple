@@ -11,7 +11,7 @@ import (
 
 func CreateComment(user models.User, videoId int64, content string) (models.CommentRes, error) {
 	// 数据库连接
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.CommentRes{}, err
 	}
@@ -45,7 +45,7 @@ func CreateComment(user models.User, videoId int64, content string) (models.Comm
 
 func DeleteComment(commentId int64) error {
 	// 数据库连接
-	db, _ := ConnectDatabase(DSN)
+	db, _ := ConnectDatabase()
 	// 删除评论
 	db.Delete(&models.Comment{}, commentId)
 	if db.Error != nil {
@@ -57,7 +57,7 @@ func DeleteComment(commentId int64) error {
 }
 
 func GetCommentList(userId int64, videoId int64) ([]models.CommentRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, err
 	}

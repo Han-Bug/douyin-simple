@@ -15,7 +15,7 @@ const (
 
 func CreateUser(username string, password string) (models.User, error) {
 
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.User{}, err
 	}
@@ -48,7 +48,7 @@ func CreateUser(username string, password string) (models.User, error) {
 
 // FindUserByPwd 通过帐号密码在数据库中查找相关用户，并返回用户数据
 func FindUserByPwd(username string, password string) (user models.User, err error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.User{}, err
 	}
@@ -74,7 +74,7 @@ func FindUserByPwd(username string, password string) (user models.User, err erro
 // GetUserResByUser 获取加工后的用户信息，若当前未登录则curUserId值应为-1
 func GetUserResByUser(user models.User, curUserId int64) (models.UserRes, error) {
 	// 连接数据库
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.UserRes{}, err
 	}
@@ -107,7 +107,7 @@ func GetUserResByUser(user models.User, curUserId int64) (models.UserRes, error)
 }
 
 func FirstUserById(userId int64) (models.User, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.User{}, err
 	}
@@ -125,7 +125,7 @@ func FirstUserById(userId int64) (models.User, error) {
 }
 func GetUserResByUserId(userId int64, curUserId int64) (models.UserRes, error) {
 	// 连接数据库
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.UserRes{}, err
 	}

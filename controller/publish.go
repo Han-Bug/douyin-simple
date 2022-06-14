@@ -63,9 +63,16 @@ func Publish(c *gin.Context) {
 	}
 
 	playUrl := strings.Join([]string{BASE_URL, filePath}, "")
-	// TODO 从视频中截取封面
+	coverPath := filepath.Join("/public/video_pic/", finalName)
+	err = utils.ReadFrameAsJpeg("."+filePath, "."+coverPath)
+	if err != nil {
+		OutPutGeneralResponse(c, 1, "视频截帧出错")
+		return
+	}
+	coverUrl := strings.Join([]string{BASE_URL, coverPath}, "")
+
 	// 此处使用的是临时封面
-	coverUrl := "https://bkimg.cdn.bcebos.com/pic/80cb39dbb6fd5266d0168896e952802bd40735fa9855?x-bce-process=image/resize,m_lfit,w_536,limit_1/format,f_jpg"
+	// coverUrl := "https://bkimg.cdn.bcebos.com/pic/80cb39dbb6fd5266d0168896e952802bd40735fa9855?x-bce-process=image/resize,m_lfit,w_536,limit_1/format,f_jpg"
 	err = services.CreateVideo(title, playUrl, coverUrl, user.Id)
 	if err != nil {
 		OutPutGeneralResponse(c, 1, "视频信息存储出错")

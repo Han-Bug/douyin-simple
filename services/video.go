@@ -9,7 +9,7 @@ import (
 )
 
 func CreateVideo(title string, playUrl string, coverUrl string, userId int64) error {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func CreateVideo(title string, playUrl string, coverUrl string, userId int64) er
 	return nil
 }
 func FirstVideo(videoId int64) (models.Video, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.Video{}, err
 	}
@@ -47,7 +47,7 @@ func FirstVideo(videoId int64) (models.Video, error) {
 }
 
 func GetVideoResByVideoId(videoId int64, curUserId int64) (models.VideoRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return models.VideoRes{}, err
 	}
@@ -67,7 +67,7 @@ func GetVideoResByVideoId(videoId int64, curUserId int64) (models.VideoRes, erro
 }
 
 func GetVideoResByUserId(userId int64, curUserId int64) ([]models.VideoRes, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, err
 	}
@@ -88,14 +88,14 @@ func GetVideoResByUserId(userId int64, curUserId int64) ([]models.VideoRes, erro
 }
 
 func GetVideoResList(latestTime time.Time, curUserId int64) ([]models.VideoRes, time.Time, error) {
-	db, err := ConnectDatabase(DSN)
+	db, err := ConnectDatabase()
 	if err != nil {
 		return nil, time.Now(), err
 	}
 
 	// 获取视频数据
 	var videos []models.Video
-	res := db.Where(" created_at < ?", latestTime).Order("created_at desc").Limit(20).Find(&videos)
+	res := db.Where(" created_at < ?", latestTime).Order("created_at desc").Limit(5).Find(&videos)
 	if res.Error != nil {
 		log.Println("GetVideoResList:获取视频列表失败")
 		utils.PrintLog(res.Error, "[Error]")
@@ -127,8 +127,8 @@ func GetVideoResByVideoWithDB(video models.Video, curUserId int64, db *gorm.DB) 
 	// 查询该用户是否赞了该视频
 	var isFavorite = false
 	if curUserId > 0 {
-		_, err := FirstFavorite(video.Id, curUserId)
-		if err == nil {
+		fav, err := FindFavorite(video.Id, curUserId)
+		if fav == nil || err != nil {
 			isFavorite = true
 		}
 	}

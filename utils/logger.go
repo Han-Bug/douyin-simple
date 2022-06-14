@@ -8,7 +8,8 @@ import (
 
 func InitLogger() {
 	//在根目录创建一个logInfo.log文件用于存储日志信息
-	logFile, ofErr := os.OpenFile("./logs/logInfo.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	filepath := "./logs/logInfo.log"
+	logFile, ofErr := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if ofErr != nil {
 		fmt.Println("open logfile failed, err:", ofErr)
 		return
